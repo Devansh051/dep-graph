@@ -20136,16 +20136,6 @@
     },
     {
       "from": "GITHUB_LIST_CHECK_RUNS_FOR_A_REF",
-      "to": "GITHUB_CHECK_IF_PULL_REQUEST_HAS_BEEN_MERGED",
-      "label": "pull_number"
-    },
-    {
-      "from": "GITHUB_LIST_CHECK_RUNS_FOR_A_REF",
-      "to": "GITHUB_CHECK_IF_PULL_REQUEST_MERGED",
-      "label": "pull_number"
-    },
-    {
-      "from": "GITHUB_LIST_CHECK_RUNS_FOR_A_REF",
       "to": "GITHUB_CREATE_A_CHECK_RUN",
       "label": "head_sha"
     },
@@ -20396,16 +20386,6 @@
     },
     {
       "from": "GITHUB_LIST_CHECK_RUNS_IN_A_CHECK_SUITE",
-      "to": "GITHUB_CHECK_IF_PULL_REQUEST_HAS_BEEN_MERGED",
-      "label": "pull_number"
-    },
-    {
-      "from": "GITHUB_LIST_CHECK_RUNS_IN_A_CHECK_SUITE",
-      "to": "GITHUB_CHECK_IF_PULL_REQUEST_MERGED",
-      "label": "pull_number"
-    },
-    {
-      "from": "GITHUB_LIST_CHECK_RUNS_IN_A_CHECK_SUITE",
       "to": "GITHUB_CHECK_TOKEN",
       "label": "client_id"
     },
@@ -20638,11 +20618,6 @@
       "from": "GITHUB_LIST_CHECK_SUITES_FOR_A_GIT_REFERENCE",
       "to": "GITHUB_ADD_SELECTED_REPOSITORY_TO_ORGANIZATION_VARIABLE",
       "label": "repository_id"
-    },
-    {
-      "from": "GITHUB_LIST_CHECK_SUITES_FOR_A_GIT_REFERENCE",
-      "to": "GITHUB_CHECK_IF_PULL_REQUEST_HAS_BEEN_MERGED",
-      "label": "pull_number"
     },
     {
       "from": "GITHUB_LIST_CHECK_SUITES_FOR_A_GIT_REFERENCE",

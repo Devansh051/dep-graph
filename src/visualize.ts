@@ -37,7 +37,7 @@ const html = `<!doctype html>
 </head>
 <body>
   <header><h1>Tool dependency graph</h1><p id="summary"></p></header>
-  <div class="tooltip" id="tooltip"></div><div class="hint">Scroll to zoom · drag nodes to rearrange</div>
+  <div class="tooltip" id="tooltip"></div><div class="hint">Scroll to zoom · drag to pin a node · double-click to release it</div>
   <svg aria-label="Interactive dependency graph"><defs><marker id="arrow" viewBox="0 -5 10 10" refX="17" refY="0" markerWidth="5" markerHeight="5" orient="auto"><path d="M0,-5L10,0L0,5" fill="#607092" /></marker></defs><g></g></svg>
   <script>
     const graph = ${graphJson};
@@ -53,7 +53,8 @@ const html = `<!doctype html>
     const simulation = d3.forceSimulation(nodes).force('link', d3.forceLink(links).id(d => d.id).distance(54).strength(.15)).force('charge', d3.forceManyBody().strength(-28)).force('center', d3.forceCenter(innerWidth / 2, innerHeight / 2)).force('collide', d3.forceCollide(7));
     simulation.on('tick', () => { link.attr('x1',d=>d.source.x).attr('y1',d=>d.source.y).attr('x2',d=>d.target.x).attr('y2',d=>d.target.y); node.attr('cx',d=>d.x).attr('cy',d=>d.y); });
     svg.call(d3.zoom().scaleExtent([.08, 5]).on('zoom', e => layer.attr('transform', e.transform)));
-    node.call(d3.drag().on('start', (e,d) => { if (!e.active) simulation.alphaTarget(.25).restart(); d.fx=d.x; d.fy=d.y; }).on('drag', (e,d) => { d.fx=e.x; d.fy=e.y; }).on('end', (e,d) => { if (!e.active) simulation.alphaTarget(0); d.fx=null; d.fy=null; }));
+    node.call(d3.drag().on('start', (e,d) => { if (!e.active) simulation.alphaTarget(.25).restart(); d.fx=d.x; d.fy=d.y; }).on('drag', (e,d) => { d.fx=e.x; d.fy=e.y; }).on('end', (e,d) => { if (!e.active) simulation.alphaTarget(0); }));
+    node.on('dblclick', (e,d) => { e.stopPropagation(); d.fx=null; d.fy=null; simulation.alpha(.3).restart(); });
     node.on('mouseenter', (e,d) => { const incoming=links.filter(l=>l.target===d).length, outgoing=links.filter(l=>l.source===d).length; tip.html('<strong>'+d.id+'</strong><br>Service: '+(d.service||'other')+'<br>'+incoming+' inputs from tools · '+outgoing+' outputs to tools').style('display','block'); }).on('mousemove', e => tip.style('left',(e.clientX+14)+'px').style('top',(e.clientY+14)+'px')).on('mouseleave', () => tip.style('display','none'));
     link.on('mouseenter', (e,d) => tip.html('<strong>'+d.label+'</strong><br>'+d.from+' → '+d.to).style('display','block')).on('mousemove', e => tip.style('left',(e.clientX+14)+'px').style('top',(e.clientY+14)+'px')).on('mouseleave', () => tip.style('display','none'));
   </script>
