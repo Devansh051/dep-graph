@@ -71,11 +71,11 @@ const OUT_PATH = "dependency_graph.json";
 
 const HIGH_CONFIDENCE = 60;
 const AMBIGUOUS_LOW = 30;
-const LLM_BATCH_SIZE = 12;
+const LLM_BATCH_SIZE = 8;
 // Keep validation bounded: deterministic scoring does the broad search and the
 // Deterministic matching does the broad search. Keep model validation bounded
 // so a large catalog cannot turn one generation run into hundreds of requests.
-const MAX_LLM_CALLS = 8;
+const MAX_LLM_CALLS = 40;
 
 // ============================================================
 // Utility helpers
