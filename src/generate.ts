@@ -73,7 +73,9 @@ const HIGH_CONFIDENCE = 60;
 const AMBIGUOUS_LOW = 30;
 const LLM_BATCH_SIZE = 12;
 // Keep validation bounded: deterministic scoring does the broad search and the
-const MAX_LLM_CALLS = 40;
+// Deterministic matching does the broad search. Keep model validation bounded
+// so a large catalog cannot turn one generation run into hundreds of requests.
+const MAX_LLM_CALLS = 8;
 
 // ============================================================
 // Utility helpers
@@ -133,59 +135,23 @@ function entityContextMatches(context: string, entity: string): boolean {
 }
 
 /**
- * Check whether a producer tool is contextually related to a given entity.
- * Uses tags, tool name, and description.
+ * Check whether a producer tool is primarily about a given entity.
+ *
+ * Tags are deliberately not positive evidence here. They commonly represent
+ * broad API areas (e.g. issue APIs also expose milestone operations) and can
+ * otherwise turn a milestone number into an issue number dependency.
  */
 function toolContextMatchesEntity(tool: NormalizedTool, entity: string): boolean {
   const e = entity.toLowerCase();
-  // Synonyms / common mappings
-  const synonyms: Record<string, string[]> = {
-    pull: ["pull", "pull_request", "pulls", "pr"],
-    issue: ["issue", "issues"],
-    comment: ["comment", "comments"],
-    review: ["review", "reviews"],
-    gist: ["gist", "gists"],
-    discussion: ["discussion", "discussions"],
-    workflow: ["workflow", "workflows"],
-    run: ["run", "runs", "workflow_run", "check_run"],
-    hook: ["hook", "hooks", "webhook", "webhooks"],
-    release: ["release", "releases"],
-    deployment: ["deployment", "deployments"],
-    runner: ["runner", "runners"],
-    reaction: ["reaction", "reactions"],
-    milestone: ["milestone", "milestones"],
-    project: ["project", "projects"],
-    package: ["package", "packages"],
-    check_run: ["check_run", "check_runs", "checks"],
-    check_suite: ["check_suite", "check_suites", "checks"],
-    thread: ["thread", "threads", "notification", "notifications"],
-    invitation: ["invitation", "invitations"],
-    column: ["column", "columns"],
-    card: ["card", "cards"],
-    artifact: ["artifact", "artifacts"],
-    asset: ["asset", "assets"],
-    migration: ["migration", "migrations"],
-    classroom: ["classroom", "classrooms"],
-    codespace: ["codespace", "codespaces"],
-    ruleset: ["ruleset", "rulesets"],
-    alert: ["alert", "alerts"],
-    autolink: ["autolink", "autolinks"],
-  };
+  const entityParts = e.split("_");
+  const toolWords = toSnake(`${tool.slug}_${tool.name}`).split("_");
 
-  const keywords = synonyms[e] || [e, e + "s"];
-
-  // Check tags
-  for (const tag of tool.tags) {
-    const lower = tag.toLowerCase().replace(/\s+/g, "_");
-    if (keywords.some(kw => lower === kw || lower.includes(kw))) return true;
-  }
-
-  // Check slug and name
-  const slugLower = tool.slug.toLowerCase();
-  const nameLower = tool.name.toLowerCase();
-  if (keywords.some(kw => slugLower.includes(kw) || nameLower.includes(kw))) return true;
-
-  return false;
+  // Every entity word must occur in the actual operation name, allowing the
+  // usual English plural suffix. This stays catalog-independent while matching
+  // forms such as "pull" and "pull_requests".
+  return entityParts.every((part) =>
+    toolWords.some((word) => word === part || word === `${part}s` || word === `${part}es`),
+  );
 }
 
 /** Simple word-overlap score between two descriptions (0-1). */
@@ -344,18 +310,17 @@ function extractOutputFields(outputParams: any): OutputField[] {
   const fields: OutputField[] = [];
   const visited = new Set<string>();
 
-  // Start from the data.$ref (main response)
+  // Start from the main response. Only fields reachable from it are genuine
+  // productions: catalogs may include unreferenced helper definitions.
   const dataRef = outputParams.properties?.data?.$ref;
   if (dataRef) {
     const refName = dataRef.replace("#/$defs/", "");
     if (defs[refName]) walkDef(refName, defs[refName], defs, fields, visited, 0);
   }
 
-  // Also walk any entity-like $defs not yet visited
-  for (const [defName, defSchema] of Object.entries(defs)) {
-    if (!visited.has(defName) && !defName.toLowerCase().includes("error")) {
-      walkDef(defName, defSchema as any, defs, fields, visited, 0);
-    }
+  // Support catalogs that put response data inline instead of behind a ref.
+  if (!dataRef && outputParams.properties?.data) {
+    walkDef("data", outputParams.properties.data, defs, fields, visited, 0);
   }
 
   return fields;
@@ -779,7 +744,9 @@ function generateEdges(candidates: CandidateEdge[]): Edge[] {
     }
   }
 
-  return edges;
+  return edges.sort((a, b) =>
+    a.from.localeCompare(b.from) || a.to.localeCompare(b.to) || a.label!.localeCompare(b.label!),
+  );
 }
 
 // ============================================================
